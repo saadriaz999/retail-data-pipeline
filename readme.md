@@ -203,3 +203,6 @@ Possible enhancements:
 
 
 Flask app running on http://18.221.191.16:5000/sales/today
+
+things for resume:
+    
