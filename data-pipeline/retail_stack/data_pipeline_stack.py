@@ -7,7 +7,8 @@ from aws_cdk import (
     aws_glue as glue,
     aws_events as events,
     aws_events_targets as targets,
-    aws_s3_assets as s3_assets
+    aws_s3_assets as s3_assets,
+    aws_s3_notifications as s3_notifications
 )
 from constructs import Construct
 import os
@@ -53,6 +54,7 @@ class RetailPipelineStack(Stack):
 
         raw_bucket.grant_read(glue_role)
         processed_bucket.grant_read_write(glue_role)
+        glue_asset.grant_read(glue_role)
 
         # =====================================================
         # GLUE JOB
@@ -100,18 +102,43 @@ class RetailPipelineStack(Stack):
         )
 
         # =====================================================
-        # LAMBDA FUNCTION
+        # INGESTION LAMBDA FUNCTION
         # =====================================================
         lambda_function = _lambda.Function(
             self,
             "RetailIngestionLambda",
             runtime=_lambda.Runtime.PYTHON_3_10,
             handler="lambda_function.lambda_handler",
-            code=_lambda.Code.from_asset("lambda"),
+            code=_lambda.Code.from_asset(
+                "lambda",
+                bundling={
+                    "image": _lambda.Runtime.PYTHON_3_10.bundling_image,
+                    "command": [
+                        "bash", "-c",
+                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                    ],
+                },
+            ),
             timeout=Duration.seconds(60),
             role=lambda_role,
             environment={
                 "BUCKET": raw_bucket.bucket_name,
+                "GLUE_JOB": "retail-sales-etl"
+            }
+        )
+
+        # =====================================================
+        # ETL TRIGGER LAMBDA
+        # =====================================================
+        etl_lambda = _lambda.Function(
+            self,
+            "RetailGlueTriggerLambda",
+            runtime=_lambda.Runtime.PYTHON_3_10,
+            handler="etl_trigger.lambda_handler",
+            code=_lambda.Code.from_asset("lambda"),
+            timeout=Duration.seconds(60),
+            role=lambda_role,
+            environment={
                 "GLUE_JOB": "retail-sales-etl"
             }
         )
@@ -126,3 +153,12 @@ class RetailPipelineStack(Stack):
         )
 
         rule.add_target(targets.LambdaFunction(lambda_function))
+
+
+        # =====================================================
+        # S3 EVENT → GLUE TRIGGER
+        # =====================================================
+        raw_bucket.add_event_notification(
+            s3.EventType.OBJECT_CREATED,
+            s3_notifications.LambdaDestination(etl_lambda)
+        )

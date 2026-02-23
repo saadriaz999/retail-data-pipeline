@@ -8,7 +8,6 @@ s3 = boto3.client("s3")
 glue = boto3.client("glue")
 
 BUCKET_NAME = os.environ["BUCKET"]
-GLUE_JOB = os.environ["GLUE_JOB"]
 
 API_URL = "http://18.221.191.16:5000/sales/today"
 
@@ -31,9 +30,6 @@ def lambda_handler(event, context):
             Key=key,
             Body=json.dumps(data)
         )
-
-        # START GLUE JOB
-        glue.start_job_run(JobName=GLUE_JOB)
 
         return {
             "status": "success",
