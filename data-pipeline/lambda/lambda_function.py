@@ -14,14 +14,15 @@ API_URL = "http://18.221.191.16:5000/sales"
 
 def lambda_handler(event, context):
     try:
-        response = requests.get(API_URL, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
         now = datetime.utcnow()
-        year = now.strftime("%Y")
+        year = 2025
         month = now.strftime("%m")
         day = now.strftime("%d")
+
+        date_param = f"{year}{month}{day}"
+        response = requests.get(API_URL, params={"date": date_param}, timeout=10)
+        response.raise_for_status()
+        data = response.json()
 
         key = f"year={year}/month={month}/day={day}/sales_{year}-{month}-{day}.json"
 

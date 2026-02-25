@@ -13,8 +13,13 @@ sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 
-# read only the new file
-raw_df = spark.read.option("multiLine", True).json(input_path)
+# read single file or all JSON under a prefix
+if input_path.endswith("/") or not input_path.rstrip("/").endswith(".json"):
+    read_path = f"{input_path.rstrip('/')}/*/*/*.json"
+else:
+    read_path = input_path
+
+raw_df = spark.read.option("multiLine", True).json(read_path)
 
 # handle nested array
 if "array" in raw_df.columns:
