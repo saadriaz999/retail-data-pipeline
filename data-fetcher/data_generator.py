@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import random
+from pathlib import Path
 from datetime import datetime, timedelta
 
 np.random.seed(42)
@@ -26,7 +27,7 @@ furniture_categories = [
     "Desk", "Shelf", "Wardrobe", "Stool", "Bench"
 ]
 
-payment_methods = ["Credit Card", "Debit Card", "PayPal"]
+payment_methods = ["CreditCard", "DebitCard", "PayPal"]
 device_types = ["Mobile", "Desktop"]
 
 # -------------------------
@@ -130,6 +131,7 @@ fact_sales = pd.DataFrame(sales)
 # -------------------------
 # SAVE FILES
 # -------------------------
+Path("data").mkdir(parents=True, exist_ok=True)
 dim_date.to_csv("data/dim_date.csv", index=False)
 dim_product.to_csv("data/dim_product.csv", index=False)
 dim_store.to_csv("data/dim_store.csv", index=False)
