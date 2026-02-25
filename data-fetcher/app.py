@@ -1,17 +1,25 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+
 
 app = Flask(__name__)
 
 # load once (fast)
 sales_df = pd.read_csv("data/fact_sales.csv")
 
-@app.route("/sales/today", methods=["GET"])
-def todays_sales():
-    today = int(datetime.today().strftime("%Y%m%d"))
-    result = sales_df[sales_df["date_id"] == today]
+@app.route("/sales", methods=["GET"])
+def get_sales():
+    date_param = request.args.get("date")
+
+    if date_param:
+        date_id = int(date_param)
+    else:
+        date_id = int(datetime.today().strftime("%Y%m%d"))
+
+    result = sales_df[sales_df["date_id"] == date_id]
+
     return jsonify(result.to_dict(orient="records"))
 
 @app.route("/dimension_tables", methods=["GET"])

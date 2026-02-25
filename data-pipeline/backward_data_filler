@@ -1,0 +1,39 @@
+import requests
+import boto3
+from datetime import datetime, timedelta
+
+BUCKET = "retail-raw-dataset"
+API_URL = "http://18.221.191.16:5000/sales"
+
+s3 = boto3.client("s3")
+
+start_date = datetime(2024, 1, 1)
+end_date = datetime(2024, 12, 31)
+
+current = start_date
+
+while current <= end_date:
+
+    date_str = current.strftime("%Y-%m-%d")
+    print("Processing:", date_str)
+
+    # call API
+    response = requests.get(API_URL, params={"date": date_str})
+    data = response.json()
+
+    # save locally
+    file_name = f"sales_{date_str}.json"
+    with open(file_name, "w") as f:
+        import json
+        json.dump(data, f)
+
+    # upload to S3
+    s3.upload_file(
+        file_name,
+        BUCKET,
+        f"historical/{file_name}"
+    )
+
+    current += timedelta(days=1)
+
+print("Backfill completed")

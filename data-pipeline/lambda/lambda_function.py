@@ -9,7 +9,7 @@ glue = boto3.client("glue")
 
 BUCKET_NAME = os.environ["BUCKET"]
 
-API_URL = "http://18.221.191.16:5000/sales/today"
+API_URL = "http://18.221.191.16:5000/sales"
 
 
 def lambda_handler(event, context):

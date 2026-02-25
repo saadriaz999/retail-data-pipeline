@@ -8,7 +8,8 @@ from aws_cdk import (
     aws_events as events,
     aws_events_targets as targets,
     aws_s3_assets as s3_assets,
-    aws_s3_notifications as s3_notifications
+    aws_s3_notifications as s3_notifications,
+    aws_custom_resources as cr
 )
 from constructs import Construct
 import os
@@ -130,6 +131,44 @@ class RetailPipelineStack(Stack):
         # =====================================================
         # DIMENSION TABLE LAMBDA FUNCTION
         # =====================================================
+        dimension_lambda = _lambda.Function(
+            self,
+            "DimensionLoaderLambda",
+            runtime=_lambda.Runtime.PYTHON_3_10,
+            handler="dimension_loader.lambda_handler",
+            code=_lambda.Code.from_asset(
+                "lambda_dimension",
+                bundling={
+                    "image": _lambda.Runtime.PYTHON_3_10.bundling_image,
+                    "command": [
+                        "bash", "-c",
+                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                    ],
+                },
+            ),
+            timeout=Duration.seconds(120),
+            role=lambda_role,
+            environment={
+                "RAW_BUCKET": raw_bucket.bucket_name,
+                "PROCESSED_BUCKET": processed_bucket.bucket_name,
+                "API_URL": "http://18.221.191.16:5000"  # replace with actual API URL
+            }
+        )
+        
+        # =====================================================
+        # CUSTOM RESOURCE TO LOAD DIMENSIONS DURING DEPLOY
+        # =====================================================
+        dimension_provider = cr.Provider(
+            self,
+            "DimensionProvider",
+            on_event_handler=dimension_lambda
+        )
+
+        cr.CustomResource(
+            self,
+            "LoadDimensionsOnDeploy",
+            service_token=dimension_provider.service_token
+        )
 
         # =====================================================
         # ETL TRIGGER LAMBDA
