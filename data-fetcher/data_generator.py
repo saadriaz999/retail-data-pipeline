@@ -32,7 +32,7 @@ device_types = ["Mobile", "Desktop"]
 # -------------------------
 # DATE DIMENSION
 # -------------------------
-start_date = datetime(2026, 1, 1)
+start_date = datetime(2025, 1, 1)
 dates = [start_date + timedelta(days=i) for i in range(365)]
 
 dim_date = pd.DataFrame({
