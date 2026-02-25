@@ -30,7 +30,7 @@ def lambda_handler(event, context):
 
         # ---------- PROCESSED PARQUET ----------
         buffer = BytesIO()
-        df.to_parquet(buffer, index=False)
+        df.to_parquet(buffer, index=False, engine='fastparquet')
 
         parquet_key = f"dimensions/{table}/{table}.parquet"
 

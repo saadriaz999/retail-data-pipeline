@@ -9,7 +9,8 @@ from aws_cdk import (
     aws_events_targets as targets,
     aws_s3_assets as s3_assets,
     aws_s3_notifications as s3_notifications,
-    aws_custom_resources as cr
+    custom_resources as cr,
+    CustomResource
 )
 from constructs import Construct
 import os
@@ -94,6 +95,7 @@ class RetailPipelineStack(Stack):
         )
 
         raw_bucket.grant_write(lambda_role)
+        processed_bucket.grant_write(lambda_role)  # for dimension loader parquet output
 
         lambda_role.add_to_policy(
             iam.PolicyStatement(
@@ -142,7 +144,7 @@ class RetailPipelineStack(Stack):
                     "image": _lambda.Runtime.PYTHON_3_10.bundling_image,
                     "command": [
                         "bash", "-c",
-                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                        "pip install --platform manylinux2014_x86_64 --only-binary=:all: -r requirements.txt -t /asset-output && cp -au . /asset-output"
                     ],
                 },
             ),
@@ -164,7 +166,7 @@ class RetailPipelineStack(Stack):
             on_event_handler=dimension_lambda
         )
 
-        cr.CustomResource(
+        CustomResource(
             self,
             "LoadDimensionsOnDeploy",
             service_token=dimension_provider.service_token
